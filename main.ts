@@ -87,6 +87,7 @@ function setup () {
     L_speed = 0
     R_speed = 0
     Gape = 15
+    Flashing = 0
     targetRightMotor = 0
     move_motor_zip = Kitronik_Move_Motor.createMoveMotorZIPLED(4)
     Kitronik_Move_Motor.stop()
@@ -94,10 +95,14 @@ function setup () {
 radio.onReceivedValue(function (name, value) {
     if (name == "L_speed") {
         L_speed = value
-        move_motor_zip.setZipLedColor(0, heatmap(-100, L_speed, 100))
+        if (Flashing != -1) {
+            move_motor_zip.setZipLedColor(0, heatmap(-100, L_speed, 100))
+        }
     } else if (name == "R_speed") {
         R_speed = value
-        move_motor_zip.setZipLedColor(1, heatmap(-100, R_speed, 100))
+        if (Flashing != 1) {
+            move_motor_zip.setZipLedColor(1, heatmap(-100, R_speed, 100))
+        }
     } else if (name == "Dial") {
         Gape = Math.trunc(Math.map(value, -120, 120, 15, 175))
     } else if (name == "Honk") {
@@ -111,17 +116,19 @@ radio.onReceivedValue(function (name, value) {
             Kitronik_Move_Motor.soundSiren(Kitronik_Move_Motor.OnOffSelection.Off)
         }
     } else if (name == "Indicate") {
+        Flashing = value * 2 - 1
         for (let flash = 0; flash <= 4; flash++) {
             Indicator(Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Orange), value)
             Indicator(Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Black), value)
         }
     } else if (name == "Claw") {
         Gape = Math.map(value, -120, 120, 0, 180)
-        move_motor_zip.setZipLedColor(2, heatmap(0, Gape, 1023))
-        move_motor_zip.setZipLedColor(3, heatmap(0, Gape, 1023))
-    } else if (name == "RadarScan") {
+        if (Flashing == 0) {
+            move_motor_zip.setZipLedColor(2, heatmap(0, Gape, 1023))
+            move_motor_zip.setZipLedColor(3, heatmap(0, Gape, 1023))
+        }
+    } else if (name == "Scan") {
         radio.sendValue("RadarMin", RadarScan())
-    } else if (name == "LightScan") {
         radio.sendValue("DarkMin", LightScan())
     } else {
         alarm()
@@ -153,6 +160,7 @@ function flex_klaw (count: number) {
 let Near_count = 0
 let Distance = 0
 let Near = 0
+let Flashing = 0
 let Gape = 0
 let R_byte = 0
 let G_byte = 0
