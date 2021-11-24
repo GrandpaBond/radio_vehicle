@@ -120,9 +120,9 @@ radio.onReceivedValue(function (name, value) {
         move_motor_zip.setZipLedColor(2, heatmap(0, Gape, 1023))
         move_motor_zip.setZipLedColor(3, heatmap(0, Gape, 1023))
     } else if (name == "RadarScan") {
-        radio.sendValue("Near", RadarScan())
+        radio.sendValue("RadarMin", RadarScan())
     } else if (name == "LightScan") {
-        radio.sendValue("Dark", LightScan())
+        radio.sendValue("DarkMin", LightScan())
     } else {
         alarm()
     }
