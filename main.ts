@@ -31,6 +31,20 @@ function alarm () {
         basic.pause(1000)
     }
 }
+function LightScan () {
+    Kitronik_Move_Motor.stop()
+    Dark = input.lightLevel()
+    Go(10, -10)
+    for (let index = 0; index <= 50; index++) {
+        basic.pause(100)
+        Shine = input.lightLevel()
+        if (Shine < Dark) {
+            Dark_count = index
+            Dark = Shine
+        }
+    }
+    return Dark * 100 + Dark_count
+}
 function heatmap (lo: number, val: number, hi: number) {
     mapped = Math.map(val, lo, hi, -320, 320)
     B_byte = Math.trunc(Math.max(0, 255 - Math.abs(-192 - mapped)))
@@ -105,11 +119,29 @@ radio.onReceivedValue(function (name, value) {
         Gape = Math.map(value, -120, 120, 0, 180)
         move_motor_zip.setZipLedColor(2, heatmap(0, Gape, 1023))
         move_motor_zip.setZipLedColor(3, heatmap(0, Gape, 1023))
+    } else if (name == "RadarScan") {
+        radio.sendValue("Near", RadarScan())
+    } else if (name == "LightScan") {
+        radio.sendValue("Dark", LightScan())
     } else {
         alarm()
     }
     time_out = input.runningTime() + 2000
 })
+function RadarScan () {
+    Kitronik_Move_Motor.stop()
+    Near = Kitronik_Move_Motor.measure()
+    Go(-10, 10)
+    for (let index = 0; index <= 50; index++) {
+        basic.pause(100)
+        Distance = Kitronik_Move_Motor.measure()
+        if (Distance < Near) {
+            Near_count = index
+            Near = Distance
+        }
+    }
+    return Near * 100 + Near_count
+}
 function flex_klaw (count: number) {
     for (let index = 0; index < count; index++) {
         Kitronik_Move_Motor.writeServoPin(Kitronik_Move_Motor.ServoSelection.servo1, 175)
@@ -118,11 +150,17 @@ function flex_klaw (count: number) {
         basic.pause(500)
     }
 }
+let Near_count = 0
+let Distance = 0
+let Near = 0
 let Gape = 0
 let R_byte = 0
 let G_byte = 0
 let B_byte = 0
 let mapped = 0
+let Dark_count = 0
+let Shine = 0
+let Dark = 0
 let R_speed = 0
 let L_speed = 0
 let targetRightMotor = 0
