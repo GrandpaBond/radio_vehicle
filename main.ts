@@ -133,6 +133,7 @@ radio.onReceivedValue(function (name, value) {
     } else {
         alarm()
     }
+    move_motor_zip.show()
     time_out = input.runningTime() + 2000
 })
 function RadarScan () {
