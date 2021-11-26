@@ -1,19 +1,34 @@
-function Indicate (Colour: number, TurnRight: number) {
-    if (TurnRight == 1) {
-        Vehicle_LEDs.setZipLedColor(1, Colour)
-        Vehicle_LEDs.setZipLedColor(2, Colour)
-    } else {
-        Vehicle_LEDs.setZipLedColor(0, Colour)
-        Vehicle_LEDs.setZipLedColor(3, Colour)
-    }
-    Vehicle_LEDs.show()
-    basic.pause(500)
-}
 function set_klaw (gape: number) {
     Kitronik_Move_Motor.writeServoPin(Kitronik_Move_Motor.ServoSelection.servo1, gape)
-    if (Flashing == 0) {
+    if (TurnRight == 0) {
         Vehicle_LEDs.setZipLedColor(2, heatmap(0, gape, 180))
         Vehicle_LEDs.setZipLedColor(3, heatmap(0, gape, 180))
+        Vehicle_LEDs.show()
+    }
+}
+function Set_Rmotor (Speed: number) {
+    if (Speed > 10) {
+        Kitronik_Move_Motor.motorOn(Kitronik_Move_Motor.Motors.MotorRight, Kitronik_Move_Motor.MotorDirection.Forward, Speed)
+    } else if (Speed < -10) {
+        Kitronik_Move_Motor.motorOn(Kitronik_Move_Motor.Motors.MotorRight, Kitronik_Move_Motor.MotorDirection.Reverse, 0 - Speed)
+    } else {
+        Kitronik_Move_Motor.motorOff(Kitronik_Move_Motor.Motors.MotorRight)
+    }
+    if (TurnRight == 0) {
+        Vehicle_LEDs.setZipLedColor(1, heatmap(-100, Speed, 100))
+        Vehicle_LEDs.show()
+    }
+}
+function Set_Lmotor (Speed: number) {
+    if (Speed > 10) {
+        Kitronik_Move_Motor.motorOn(Kitronik_Move_Motor.Motors.MotorLeft, Kitronik_Move_Motor.MotorDirection.Forward, Speed)
+    } else if (Speed < -10) {
+        Kitronik_Move_Motor.motorOn(Kitronik_Move_Motor.Motors.MotorLeft, Kitronik_Move_Motor.MotorDirection.Reverse, 0 - Speed)
+    } else {
+        Kitronik_Move_Motor.motorOff(Kitronik_Move_Motor.Motors.MotorLeft)
+    }
+    if (TurnRight == 0) {
+        Vehicle_LEDs.setZipLedColor(0, heatmap(-100, Speed, 100))
         Vehicle_LEDs.show()
     }
 }
@@ -25,6 +40,12 @@ input.onButtonPressed(Button.A, function () {
     }
     time_out = input.runningTime() + 2000
 })
+function Indicate2 (TurnR: number) {
+    for (let flash = 0; flash <= 6; flash++) {
+        Flash(Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Orange), TurnR)
+        Flash(Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Black), TurnR)
+    }
+}
 function alarm () {
     for (let index = 0; index < 4; index++) {
         Kitronik_Move_Motor.soundSiren(Kitronik_Move_Motor.OnOffSelection.On)
@@ -36,7 +57,6 @@ function alarm () {
 function LightScan () {
     Kitronik_Move_Motor.stop()
     Dark = input.lightLevel()
-    Go(15, -15)
     for (let index = 0; index <= 50; index++) {
         basic.pause(100)
         Shine = input.lightLevel()
@@ -67,49 +87,36 @@ input.onButtonPressed(Button.B, function () {
     }
     time_out = input.runningTime() + 2000
 })
-function Go (L: number, R: number) {
-    if (L > 2) {
-        Kitronik_Move_Motor.motorOn(Kitronik_Move_Motor.Motors.MotorLeft, Kitronik_Move_Motor.MotorDirection.Forward, L)
-    } else if (L < -2) {
-        Kitronik_Move_Motor.motorOn(Kitronik_Move_Motor.Motors.MotorLeft, Kitronik_Move_Motor.MotorDirection.Reverse, 0 - L)
-    } else {
-        Kitronik_Move_Motor.motorOff(Kitronik_Move_Motor.Motors.MotorLeft)
-    }
-    if (R > 2) {
-        Kitronik_Move_Motor.motorOn(Kitronik_Move_Motor.Motors.MotorRight, Kitronik_Move_Motor.MotorDirection.Forward, R)
-    } else if (R < -2) {
-        Kitronik_Move_Motor.motorOn(Kitronik_Move_Motor.Motors.MotorRight, Kitronik_Move_Motor.MotorDirection.Reverse, 0 - R)
-    } else {
-        Kitronik_Move_Motor.motorOff(Kitronik_Move_Motor.Motors.MotorRight)
-    }
-    Vehicle_LEDs.setZipLedColor(0, heatmap(-100, L, 100))
-    Vehicle_LEDs.setZipLedColor(1, heatmap(-100, R, 100))
-    Vehicle_LEDs.show()
-}
 function setup () {
     L_speed = 0
+    L_now = 0
     R_speed = 0
+    R_now = 0
     Gape = 15
-    Flashing = 0
+    Gape_now = 15
+    TurnRight = 0
     targetRightMotor = 0
     Vehicle_LEDs = Kitronik_Move_Motor.createMoveMotorZIPLED(4)
-    heart = 1
     Kitronik_Move_Motor.stop()
 }
 radio.onReceivedValue(function (name, value) {
-    heart = 1
+    heartbeat = 1
     if (name == "L_speed") {
-        L_speed = value
-        if (Flashing != -1) {
-            Vehicle_LEDs.setZipLedColor(0, heatmap(-100, L_speed, 100))
+        if (value != L_speed) {
+            L_speed = value
+            Set_Lmotor(value)
         }
     } else if (name == "R_speed") {
-        R_speed = value
-        if (Flashing != 1) {
-            Vehicle_LEDs.setZipLedColor(1, heatmap(-100, R_speed, 100))
+        if (value != R_speed) {
+            R_speed = value
+            Set_Rmotor(value)
         }
     } else if (name == "Dial") {
         Gape = Math.trunc(Math.map(value, -120, 120, 15, 175))
+        if (Gape != Gape_now) {
+            set_klaw(Gape)
+            Gape_now = Gape
+        }
     } else if (name == "Honk") {
         if (value == 1) {
             Kitronik_Move_Motor.beepHorn()
@@ -121,15 +128,12 @@ radio.onReceivedValue(function (name, value) {
             Kitronik_Move_Motor.soundSiren(Kitronik_Move_Motor.OnOffSelection.Off)
         }
     } else if (name == "Indicate") {
-        Flashing = value * 2 - 1
-        for (let flash = 0; flash <= 6; flash++) {
-            Indicate(Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Orange), value)
-            Indicate(Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Black), value)
-        }
-        Flashing = 0
+        TurnRight = value * 2 - 1
+        Indicate2(TurnRight)
+        TurnRight = 0
     } else if (name == "Claw") {
         Gape = Math.map(value, -120, 120, 0, 180)
-        if (Flashing == 0) {
+        if (TurnRight == 0) {
             Vehicle_LEDs.setZipLedColor(2, heatmap(0, Gape, 1023))
             Vehicle_LEDs.setZipLedColor(3, heatmap(0, Gape, 1023))
         }
@@ -145,7 +149,6 @@ radio.onReceivedValue(function (name, value) {
 function RadarScan () {
     Kitronik_Move_Motor.stop()
     Near = Kitronik_Move_Motor.measure()
-    Go(-15, 15)
     for (let index = 0; index <= 50; index++) {
         basic.pause(100)
         Distance = Kitronik_Move_Motor.measure()
@@ -165,11 +168,35 @@ function flex_klaw (count: number) {
         basic.pause(500)
     }
 }
+function Flash (Colour: number, RightSide: number) {
+    if (RightSide == 1) {
+        Vehicle_LEDs.setZipLedColor(1, Colour)
+        Vehicle_LEDs.setZipLedColor(2, Colour)
+    } else {
+        Vehicle_LEDs.setZipLedColor(0, Colour)
+        Vehicle_LEDs.setZipLedColor(3, Colour)
+    }
+    Vehicle_LEDs.show()
+    basic.pause(500)
+}
+function beat_heart () {
+    heart = 0 - heart
+    if (heart == 1) {
+        basic.showIcon(IconNames.Heart)
+    } else if (heart == -1) {
+        basic.showIcon(IconNames.SmallHeart)
+    } else {
+        basic.showIcon(IconNames.No)
+    }
+}
+let heart = 0
 let Near_count = 0
 let Distance = 0
 let Near = 0
-let heart = 0
+let Gape_now = 0
 let Gape = 0
+let R_now = 0
+let L_now = 0
 let R_byte = 0
 let G_byte = 0
 let B_byte = 0
@@ -180,22 +207,24 @@ let Dark = 0
 let R_speed = 0
 let L_speed = 0
 let targetRightMotor = 0
-let Flashing = 0
 let Vehicle_LEDs: Kitronik_Move_Motor.MoveMotorZIP = null
+let TurnRight = 0
+let heartbeat = 0
 let time_out = 0
 radio.setGroup(99)
 setup()
 flex_klaw(2)
 time_out = input.runningTime() + 10000
+heartbeat = input.runningTime() + 500
 basic.showIcon(IconNames.Heart)
 basic.forever(function () {
-    if (input.runningTime() < time_out) {
-        Go(L_speed, R_speed)
-        set_klaw(Gape)
-    } else {
+    if (input.runningTime() > heartbeat) {
+        beat_heart()
+        heartbeat = input.runningTime() + 500
+    }
+    if (input.runningTime() > time_out) {
         Kitronik_Move_Motor.stop()
-        heart = 0
-        basic.showIcon(IconNames.No)
+        heartbeat = 0
     }
     basic.pause(200)
 })
