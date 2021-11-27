@@ -58,14 +58,15 @@ function LightScan () {
     Kitronik_Move_Motor.stop()
     Dark = input.lightLevel()
     for (let index = 0; index <= 50; index++) {
+        Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Right, 20)
         basic.pause(100)
+        Kitronik_Move_Motor.stop()
         Shine = input.lightLevel()
         if (Shine < Dark) {
             Dark_count = index
             Dark = Shine
         }
     }
-    Kitronik_Move_Motor.stop()
     return Dark * 100 + Dark_count
 }
 function heatmap (lo: number, val: number, hi: number) {
@@ -88,6 +89,7 @@ input.onButtonPressed(Button.B, function () {
     time_out = input.runningTime() + 2000
 })
 function setup () {
+    radio.setGroup(99)
     L_speed = 0
     R_speed = 0
     Gape = 15
@@ -96,6 +98,9 @@ function setup () {
     targetRightMotor = 0
     Vehicle_LEDs = Kitronik_Move_Motor.createMoveMotorZIPLED(4)
     Kitronik_Move_Motor.stop()
+    time_out = input.runningTime() + 15000
+    heart = 1
+    heartbeat = input.runningTime() + 500
 }
 radio.onReceivedValue(function (name, value) {
     if (name == "L_speed") {
@@ -126,8 +131,6 @@ radio.onReceivedValue(function (name, value) {
         }
     } else if (name == "Indicate") {
         Turning = value * 2 - 1
-        Indicate(Turning)
-        Turning = 0
     } else if (name == "Scan") {
         radio.sendValue("RadarMin", RadarScan())
         radio.sendValue("DarkMin", LightScan())
@@ -144,14 +147,15 @@ function RadarScan () {
     Kitronik_Move_Motor.stop()
     Near = Kitronik_Move_Motor.measure()
     for (let index = 0; index <= 50; index++) {
+        Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Left, 20)
         basic.pause(100)
+        Kitronik_Move_Motor.stop()
         Distance = Kitronik_Move_Motor.measure()
         if (Distance < Near) {
             Near_count = index
             Near = Distance
         }
     }
-    Kitronik_Move_Motor.stop()
     return Near * 100 + Near_count
 }
 function flex_klaw (count: number) {
@@ -187,6 +191,8 @@ function beat_heart () {
 let Near_count = 0
 let Distance = 0
 let Near = 0
+let heartbeat = 0
+let heart = 0
 let Gape_now = 0
 let Gape = 0
 let R_byte = 0
@@ -196,20 +202,14 @@ let mapped = 0
 let Dark_count = 0
 let Shine = 0
 let Dark = 0
+let time_out = 0
 let R_speed = 0
 let L_speed = 0
 let targetRightMotor = 0
 let Vehicle_LEDs: Kitronik_Move_Motor.MoveMotorZIP = null
 let Turning = 0
-let heart = 0
-let heartbeat = 0
-let time_out = 0
-radio.setGroup(99)
 setup()
-flex_klaw(2)
-time_out = input.runningTime() + 10000
-heartbeat = input.runningTime() + 500
-heart = 1
+flex_klaw(3)
 basic.forever(function () {
     if (input.runningTime() > heartbeat) {
         beat_heart()
@@ -217,6 +217,10 @@ basic.forever(function () {
     if (input.runningTime() > time_out) {
         Kitronik_Move_Motor.stop()
         heart = 0
+    }
+    if (Turning != 0) {
+        Indicate(Turning)
+        Turning = 0
     }
     basic.pause(100)
 })
