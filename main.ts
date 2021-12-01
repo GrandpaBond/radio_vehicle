@@ -1,8 +1,19 @@
-function Indicate (TurnR: number) {
-    for (let repeat = 0; repeat <= 6; repeat++) {
-        Flash(Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Orange), TurnR)
-        Flash(Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Black), TurnR)
+function Indicate () {
+    if (Turning % 2 == 0) {
+        Flash_Colour = Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Black)
+    } else {
+        Flash_Colour = Kitronik_Move_Motor.rgb(255, 64, 0)
     }
+    if (Turning > 0) {
+        Vehicle_LEDs.setZipLedColor(1, Flash_Colour)
+        Vehicle_LEDs.setZipLedColor(2, Flash_Colour)
+        Turning += -1
+    } else if (Turning < 0) {
+        Vehicle_LEDs.setZipLedColor(0, Flash_Colour)
+        Vehicle_LEDs.setZipLedColor(3, Flash_Colour)
+        Turning += 1
+    }
+    Vehicle_LEDs.show()
 }
 function set_klaw (gape: number) {
     Kitronik_Move_Motor.writeServoPin(Kitronik_Move_Motor.ServoSelection.servo1, gape)
@@ -56,16 +67,15 @@ function alarm () {
 }
 function LightScan () {
     Kitronik_Move_Motor.stop()
+    Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Right, 20)
     Dark = input.lightLevel()
-    for (let index = 0; index <= 50; index++) {
-        Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Right, 20)
-        basic.pause(100)
-        Kitronik_Move_Motor.stop()
+    for (let index = 0; index <= 30; index++) {
         Shine = input.lightLevel()
         if (Shine < Dark) {
             Dark_count = index
             Dark = Shine
         }
+        basic.pause(100)
     }
     return Dark * 100 + Dark_count
 }
@@ -130,7 +140,7 @@ radio.onReceivedValue(function (name, value) {
             Kitronik_Move_Motor.soundSiren(Kitronik_Move_Motor.OnOffSelection.Off)
         }
     } else if (name == "Indicate") {
-        Turning = value * 2 - 1
+        Turning = value
     } else if (name == "Scan") {
         radio.sendValue("RadarMin", RadarScan())
         radio.sendValue("DarkMin", LightScan())
@@ -145,16 +155,15 @@ radio.onReceivedValue(function (name, value) {
 })
 function RadarScan () {
     Kitronik_Move_Motor.stop()
+    Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Left, 20)
     Near = Kitronik_Move_Motor.measure()
-    for (let index = 0; index <= 50; index++) {
-        Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Left, 20)
-        basic.pause(100)
-        Kitronik_Move_Motor.stop()
+    for (let index = 0; index <= 30; index++) {
         Distance = Kitronik_Move_Motor.measure()
         if (Distance < Near) {
             Near_count = index
             Near = Distance
         }
+        basic.pause(100)
     }
     return Near * 100 + Near_count
 }
@@ -165,17 +174,6 @@ function flex_klaw (count: number) {
         Kitronik_Move_Motor.writeServoPin(Kitronik_Move_Motor.ServoSelection.servo1, 10)
         basic.pause(500)
     }
-}
-function Flash (Colour: number, RightSide: number) {
-    if (RightSide == 1) {
-        Vehicle_LEDs.setZipLedColor(1, Colour)
-        Vehicle_LEDs.setZipLedColor(2, Colour)
-    } else {
-        Vehicle_LEDs.setZipLedColor(0, Colour)
-        Vehicle_LEDs.setZipLedColor(3, Colour)
-    }
-    Vehicle_LEDs.show()
-    basic.pause(500)
 }
 function beat_heart () {
     heart = 0 - heart
@@ -207,6 +205,7 @@ let R_speed = 0
 let L_speed = 0
 let targetRightMotor = 0
 let Vehicle_LEDs: Kitronik_Move_Motor.MoveMotorZIP = null
+let Flash_Colour = 0
 let Turning = 0
 setup()
 flex_klaw(3)
@@ -219,8 +218,7 @@ basic.forever(function () {
         heart = 0
     }
     if (Turning != 0) {
-        Indicate(Turning)
-        Turning = 0
+        Indicate()
     }
-    basic.pause(100)
+    basic.pause(200)
 })
