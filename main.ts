@@ -76,9 +76,7 @@ function setup () {
     Vehicle_LEDs = Kitronik_Move_Motor.createMoveMotorZIPLED(4)
     Kitronik_Move_Motor.stop()
     NOW = input.runningTime()
-    expiry_time = NOW + 15000
-    pulse_time = NOW + 500
-    heart = 1
+    expiry_time = NOW + 2000
 }
 radio.onReceivedValue(function (name, value) {
     if (name == "L_speed") {
@@ -110,20 +108,15 @@ radio.onReceivedValue(function (name, value) {
     } else if (name == "Indicate") {
         Turning = value * 2
     } else if (name == "Scan") {
-        heart = 0
         basic.showArrow(ArrowNames.East)
         radio.sendValue("RadarMin", RadarScan())
         basic.showArrow(ArrowNames.West)
         radio.sendValue("DarkMin", LightScan())
-        heart = 1
     } else {
         alarm()
     }
     Vehicle_LEDs.show()
     expiry_time = input.runningTime() + 2000
-    if (heart == 0) {
-        heart = 1
-    }
 })
 function RadarScan () {
     Kitronik_Move_Motor.stop()
@@ -148,7 +141,7 @@ function flex_klaw (count: number) {
     }
 }
 function Flash () {
-    flash_time = NOW + 250
+    flash_time = NOW + 150
     if (Turning % 2 == 0) {
         flash_colour = Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Black)
     } else {
@@ -185,13 +178,13 @@ function Map_LEDS () {
         Vehicle_LEDs.show()
     }
 }
+let pulse_time = 0
+let heart = 0
 let flash_colour = 0
 let flash_time = 0
 let Near_count = 0
 let Distance = 0
 let Near = 0
-let heart = 0
-let pulse_time = 0
 let NOW = 0
 let Vehicle_LEDs: Kitronik_Move_Motor.MoveMotorZIP = null
 let Turning = 0
@@ -214,7 +207,6 @@ basic.forever(function () {
     NOW = input.runningTime()
     if (NOW > expiry_time) {
         Kitronik_Move_Motor.stop()
-        heart = 0
     }
     if (Turning == 0) {
         Map_LEDS()
@@ -222,8 +214,5 @@ basic.forever(function () {
         if (NOW > flash_time) {
             Flash()
         }
-    }
-    if (NOW > pulse_time) {
-        beat_heart()
     }
 })
