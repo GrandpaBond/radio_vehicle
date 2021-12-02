@@ -124,7 +124,7 @@ radio.onReceivedValue(function (name, value) {
             Kitronik_Move_Motor.soundSiren(Kitronik_Move_Motor.OnOffSelection.Off)
         }
     } else if (name == "Indicate") {
-        Turning = value
+        Turning = value * 2
     } else if (name == "Scan") {
         heart = 0
         basic.showArrow(ArrowNames.East)
@@ -164,10 +164,11 @@ function flex_klaw (count: number) {
     }
 }
 function Flash () {
+    flash_time = NOW + 250
     if (Turning % 2 == 0) {
         flash_colour = Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Black)
     } else {
-        flash_colour = Kitronik_Move_Motor.rgb(255, 64, 0)
+        flash_colour = Kitronik_Move_Motor.rgb(255, 100, 0)
     }
     if (Turning > 0) {
         Vehicle_LEDs.setZipLedColor(1, flash_colour)
@@ -179,7 +180,6 @@ function Flash () {
         Turning += 1
     }
     Vehicle_LEDs.show()
-    flash_time = NOW + 250
 }
 function beat_heart () {
     heart = 0 - heart
@@ -187,11 +187,13 @@ function beat_heart () {
         basic.showIcon(IconNames.Heart)
     } else if (heart == -1) {
         basic.showIcon(IconNames.SmallHeart)
+    } else {
+        basic.showIcon(IconNames.No)
     }
     pulse_time = input.runningTime() + 500
 }
-let flash_time = 0
 let flash_colour = 0
+let flash_time = 0
 let Near_count = 0
 let Distance = 0
 let Near = 0
@@ -217,9 +219,6 @@ setup()
 flex_klaw(3)
 basic.forever(function () {
     NOW = input.runningTime()
-    if (NOW > pulse_time) {
-        beat_heart()
-    }
     if (NOW > expiry_time) {
         Kitronik_Move_Motor.stop()
         heart = 0
@@ -228,5 +227,8 @@ basic.forever(function () {
         if (NOW > flash_time) {
             Flash()
         }
+    }
+    if (NOW > pulse_time) {
+        beat_heart()
     }
 })
