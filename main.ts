@@ -36,14 +36,15 @@ function LightScan () {
     Kitronik_Move_Motor.stop()
     Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Right, 20)
     Dark = input.lightLevel()
-    for (let index = 0; index <= 50; index++) {
+    for (let Dark_index = 0; Dark_index <= 60; Dark_index++) {
         Shine = input.lightLevel()
         if (Shine < Dark) {
-            Dark_count = index
+            Dark_count = Dark_index
             Dark = Shine
         }
-        basic.pause(100)
+        basic.pause(500)
     }
+    Kitronik_Move_Motor.stop()
     return Dark * 100 + Dark_count
 }
 function heatmap (lo: number, val: number, hi: number) {
@@ -69,8 +70,8 @@ function setup () {
     radio.setGroup(99)
     L_speed = 0
     R_speed = 0
+    new_Gape = 15
     Gape = 15
-    Gape_now = 15
     Turning = 0
     targetRightMotor = 0
     Vehicle_LEDs = Kitronik_Move_Motor.createMoveMotorZIPLED(4)
@@ -82,18 +83,18 @@ radio.onReceivedValue(function (name, value) {
     if (name == "L_speed") {
         if (value != L_speed) {
             L_speed = value
-            Set_Lmotor(value)
+            Set_Lmotor(L_speed)
         }
     } else if (name == "R_speed") {
         if (value != R_speed) {
             R_speed = value
-            Set_Rmotor(value)
+            Set_Rmotor(R_speed)
         }
     } else if (name == "Dial") {
-        Gape = Math.trunc(Math.map(value, -120, 120, 15, 175))
-        if (Gape != Gape_now) {
+        new_Gape = Math.trunc(Math.map(value, -120, 120, 15, 175))
+        if (Gape != new_Gape) {
+            Gape = new_Gape
             Kitronik_Move_Motor.writeServoPin(Kitronik_Move_Motor.ServoSelection.servo1, Gape)
-            Gape_now = Gape
         }
     } else if (name == "Honk") {
         if (value == 1) {
@@ -115,21 +116,21 @@ radio.onReceivedValue(function (name, value) {
     } else {
         alarm()
     }
-    Vehicle_LEDs.show()
     expiry_time = input.runningTime() + 2000
 })
 function RadarScan () {
     Kitronik_Move_Motor.stop()
     Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Left, 20)
     Near = Kitronik_Move_Motor.measure()
-    for (let index = 0; index <= 50; index++) {
+    for (let Near_index = 0; Near_index <= 60; Near_index++) {
         Distance = Kitronik_Move_Motor.measure()
         if (Distance < Near) {
-            Near_count = index
+            Near_count = Near_index
             Near = Distance
         }
-        basic.pause(100)
+        basic.pause(50)
     }
+    Kitronik_Move_Motor.stop()
     return Near * 100 + Near_count
 }
 function flex_klaw (count: number) {
@@ -141,7 +142,7 @@ function flex_klaw (count: number) {
     }
 }
 function Flash () {
-    flash_time = NOW + 150
+    flash_time = input.runningTime() + 150
     if (Turning % 2 == 0) {
         flash_colour = Kitronik_Move_Motor.colors(Kitronik_Move_Motor.ZipLedColors.Black)
     } else {
@@ -158,17 +159,6 @@ function Flash () {
     }
     Vehicle_LEDs.show()
 }
-function beat_heart () {
-    heart = 0 - heart
-    if (heart == 1) {
-        basic.showIcon(IconNames.Heart)
-    } else if (heart == -1) {
-        basic.showIcon(IconNames.SmallHeart)
-    } else {
-        basic.showIcon(IconNames.No)
-    }
-    pulse_time = input.runningTime() + 500
-}
 function Map_LEDS () {
     if (Turning == 0) {
         Vehicle_LEDs.setZipLedColor(2, heatmap(0, Gape, 180))
@@ -178,8 +168,6 @@ function Map_LEDS () {
         Vehicle_LEDs.show()
     }
 }
-let pulse_time = 0
-let heart = 0
 let flash_colour = 0
 let flash_time = 0
 let Near_count = 0
@@ -188,8 +176,8 @@ let Near = 0
 let NOW = 0
 let Vehicle_LEDs: Kitronik_Move_Motor.MoveMotorZIP = null
 let Turning = 0
-let Gape_now = 0
 let Gape = 0
+let new_Gape = 0
 let R_byte = 0
 let G_byte = 0
 let B_byte = 0
