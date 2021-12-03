@@ -24,6 +24,17 @@ input.onButtonPressed(Button.A, function () {
     }
     expiry_time = input.runningTime() + 2000
 })
+function perform_scans () {
+    radio.setGroup(1)
+    Scanning = 1
+    basic.showArrow(ArrowNames.East)
+    RadarScan()
+    basic.showArrow(ArrowNames.West)
+    LightScan()
+    basic.showIcon(IconNames.Heart)
+    radio.setGroup(99)
+    Scanning = 0
+}
 function alarm () {
     for (let index = 0; index < 4; index++) {
         Kitronik_Move_Motor.soundSiren(Kitronik_Move_Motor.OnOffSelection.On)
@@ -33,19 +44,18 @@ function alarm () {
     }
 }
 function LightScan () {
-    Kitronik_Move_Motor.stop()
-    Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Right, 20)
+    Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Right, 19)
     Dark = input.lightLevel()
-    for (let Dark_index = 0; Dark_index <= 60; Dark_index++) {
+    for (let Dark_index = 0; Dark_index <= 50; Dark_index++) {
         Shine = input.lightLevel()
         if (Shine < Dark) {
             Dark_count = Dark_index
             Dark = Shine
         }
-        basic.pause(500)
+        basic.pause(50)
     }
     Kitronik_Move_Motor.stop()
-    return Dark * 100 + Dark_count
+    Dark = Dark * 100 + Dark_count
 }
 function heatmap (lo: number, val: number, hi: number) {
     mapped = Math.map(val, lo, hi, -320, 320)
@@ -73,6 +83,7 @@ function setup () {
     new_Gape = 15
     Gape = 15
     Turning = 0
+    Scanning = 0
     targetRightMotor = 0
     Vehicle_LEDs = Kitronik_Move_Motor.createMoveMotorZIPLED(4)
     Kitronik_Move_Motor.stop()
@@ -109,20 +120,18 @@ radio.onReceivedValue(function (name, value) {
     } else if (name == "Indicate") {
         Turning = value * 2
     } else if (name == "Scan") {
-        basic.showArrow(ArrowNames.East)
-        radio.sendValue("RadarMin", RadarScan())
-        basic.showArrow(ArrowNames.West)
-        radio.sendValue("DarkMin", LightScan())
+        perform_scans()
+        radio.sendValue("RadarMin", Near)
+        radio.sendValue("DarkMin", Dark)
     } else {
         alarm()
     }
     expiry_time = input.runningTime() + 2000
 })
 function RadarScan () {
-    Kitronik_Move_Motor.stop()
-    Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Left, 20)
+    Kitronik_Move_Motor.spin(Kitronik_Move_Motor.SpinDirections.Left, 18)
     Near = Kitronik_Move_Motor.measure()
-    for (let Near_index = 0; Near_index <= 60; Near_index++) {
+    for (let Near_index = 0; Near_index <= 50; Near_index++) {
         Distance = Kitronik_Move_Motor.measure()
         if (Distance < Near) {
             Near_count = Near_index
@@ -131,7 +140,7 @@ function RadarScan () {
         basic.pause(50)
     }
     Kitronik_Move_Motor.stop()
-    return Near * 100 + Near_count
+    Near = Near * 100 + Near_count
 }
 function flex_klaw (count: number) {
     for (let index = 0; index < count; index++) {
@@ -185,16 +194,19 @@ let mapped = 0
 let Dark_count = 0
 let Shine = 0
 let Dark = 0
+let Scanning = 0
 let expiry_time = 0
 let R_speed = 0
 let L_speed = 0
 let targetRightMotor = 0
 setup()
 flex_klaw(3)
+basic.showIcon(IconNames.Heart)
 basic.forever(function () {
     NOW = input.runningTime()
-    if (NOW > expiry_time) {
+    if (Scanning == 0 && NOW > expiry_time) {
         Kitronik_Move_Motor.stop()
+        basic.showIcon(IconNames.No)
     }
     if (Turning == 0) {
         Map_LEDS()
